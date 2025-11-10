@@ -28,13 +28,18 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        select, input {
+        select, input, textarea {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 14px;
+        }
+        textarea {
+            font-family: monospace;
+            resize: vertical;
+            overflow-y: auto;
         }
         .depth-field {
             width: auto;
@@ -58,6 +63,10 @@
             word-break: break-all;
             transition: background-color 0.3s;
             white-space: pre-wrap;
+            cursor: pointer;
+        }
+        .output-string:hover {
+            background-color: #e0e0e0;
         }
         .output-string.valid {
             background-color: #d4edda;
@@ -130,17 +139,98 @@
             margin-top: 10px;
             font-weight: bold;
         }
+        .settings-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .settings-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .radio-option input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+        .radio-option label {
+            margin-bottom: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .bookmarks-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .bookmarks-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .bookmarks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bookmark-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .bookmark-text {
+            font-family: monospace;
+            font-size: 16px;
+            flex: 1;
+            word-break: break-all;
+            cursor: pointer;
+        }
+        .bookmark-text:hover {
+            background-color: #e0e0e0;
+            padding: 5px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <div class="form-group form-group-inline">
-        <div>
-            <label for="currentHole">Current Hole:</label>
-            <select id="currentHole">
-                <option value="*" selected>Home (J113508)</option>
-            </select>
+    <div class="settings-section">
+        <h3>Settings</h3>
+        <div class="radio-group">
+            <div class="radio-option">
+                <input type="radio" id="singleSignature" name="signatureMode" value="single" checked>
+                <label for="singleSignature">Single Signature</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="allSignatures" name="signatureMode" value="all">
+                <label for="allSignatures">All Signatures</label>
+            </div>
         </div>
-        <button id="makeHomeButton" class="action-button" onclick="makeHome()">Make Home</button>
+    </div>
+
+    <div class="form-group">
+        <label for="currentHole">Current Hole:</label>
+        <select id="currentHole">
+            <option value="*" selected>Home (J113508)</option>
+        </select>
     </div>
 
     <div id="nextHoleGroup" class="form-group form-group-inline">
@@ -160,18 +250,22 @@
                 <select id="currentDepth" class="depth-field">
                 </select>
             </div>
-            <button id="addDepthButton" class="action-button" onclick="addDepth()">Add Depth</button>
-            <button id="removeDepthButton" class="remove-button" onclick="removeDepth()">Remove Depth</button>
+            <button id="addDepthButton" class="action-button" onclick="addDepth()">+</button>
+            <button id="removeDepthButton" class="remove-button" onclick="removeDepth()">-</button>
         </div>
     </div>
 
     <div class="output-container">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             Temporary Name:
-            <div class="output-string" id="temporaryNameCurrent" style="flex: 1;"></div>
-            <button id="compytemporaryNameCurrent" class="copy-button" onclick="copytemporaryNameCurrentToClipboard()">Copy to Clipboard</button>
+            <div class="output-string" id="temporaryNameCurrent" style="flex: 1;" onclick="copyToClipboard('temporaryNameCurrent')"></div>
+            <button id="copyTemporaryNameCurrent" class="copy-button" onclick="copyToClipboard('temporaryNameCurrent')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
         </div>
-        <div class="copied-message" id="copiedtemporaryNameCurrentMessage">Copied!</div>
     </div>
 
     <div id="nextDepthGroup" class="form-group form-group-inline">
@@ -180,25 +274,34 @@
             <select id="nextDepth">
             </select>
         </div>
-        <button class="action-button" onclick="goToNext()">Next</button>
+        <button class="action-button" onclick="goToNext()">+</button>
         <button class="remove-button" onclick="resetDepth()">Reset</button>
     </div>
 
     <div class="output-container" id="temporaryNameNextContainer">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             Temporary Name:
-            <div class="output-string" id="temporaryNameNext" style="flex: 1;"></div>
-            <button id="compytemporaryNameNext" class="copy-button" onclick="copytemporaryNameNexttToClipboard()">Copy to Clipboard</button>
+            <div class="output-string" id="temporaryNameNext" style="flex: 1;" onclick="copyToClipboard('temporaryNameNext')"></div>
+            <button id="copyTemporaryNameNext" class="copy-button" onclick="copyToClipboard('temporaryNameNext')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
         </div>
-        <div class="copied-message" id="copiedtemporaryNameNextMessage">Copied!</div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="signatureGroup">
         <label for="signature">Signature:</label>
         <input type="text" id="signature" maxlength="3" placeholder="First 3 letters of cosmic signature...">
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="signaturesGroup" style="display: none;">
+        <label for="signatures">Signatures:</label>
+        <textarea id="signatures" rows="5" placeholder="Enter signatures..."></textarea>
+    </div>
+
+    <div class="form-group" id="wormholeTypeGroup">
         <label for="code">Wormhole Type:</label>
         <select id="code">
             <option value="">Select...</option>
@@ -217,14 +320,27 @@
         </select>
     </div>
 
-    <div class="output-container">
+    <div class="output-container" id="bookmarkSection">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             Bookmark:
-            <div class="output-string" id="output" style="flex: 1;"></div>
-            <button id="copyButton" class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+            <div class="output-string" id="output" style="flex: 1;" onclick="copyToClipboard('output')"></div>
+            <button id="copyButton" class="copy-button" onclick="copyToClipboard('output')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
         </div>
-        <div class="copied-message" id="copiedMessage">Copied!</div>
     </div>
+
+    <div class="bookmarks-section" id="bookmarksSection" style="display: none;">
+        <h3>Bookmarks</h3>
+        <div id="bookmarksList" class="bookmarks-list">
+            <!-- Dynamic bookmark items will be added here -->
+        </div>
+    </div>
+
+    <div class="copied-message" id="copiedMessage">Copied!</div>
 
     <script>
         // NATO Alphabet
@@ -317,12 +433,57 @@
         populateNextDepthDropdown();
         updateRemoveDepthButton();
 
+        // Handle signature mode toggle
+        function toggleSignatureMode() {
+            const mode = document.querySelector('input[name="signatureMode"]:checked').value;
+            const signatureGroup = document.getElementById('signatureGroup');
+            const signaturesGroup = document.getElementById('signaturesGroup');
+            const bookmarkSection = document.getElementById('bookmarkSection');
+            const bookmarksSection = document.getElementById('bookmarksSection');
+            const nextDepthGroup = document.getElementById('nextDepthGroup');
+            const temporaryNameNextContainer = document.getElementById('temporaryNameNextContainer');
+            const wormholeTypeGroup = document.getElementById('wormholeTypeGroup');
+
+            if (mode === 'single') {
+                signatureGroup.style.display = 'block';
+                signaturesGroup.style.display = 'none';
+                bookmarkSection.style.display = 'block';
+                bookmarksSection.style.display = 'none';
+                wormholeTypeGroup.style.display = 'block';
+                // Show next depth only if not at Home - will be controlled by generateString()
+                if (!isHome()) {
+                    nextDepthGroup.style.display = 'flex';
+                    temporaryNameNextContainer.style.display = 'block';
+                }
+            } else {
+                signatureGroup.style.display = 'none';
+                signaturesGroup.style.display = 'block';
+                bookmarkSection.style.display = 'none';
+                bookmarksSection.style.display = 'block';
+                wormholeTypeGroup.style.display = 'none';
+                // Hide next depth section in all signatures mode
+                nextDepthGroup.style.display = 'none';
+                temporaryNameNextContainer.style.display = 'none';
+            }
+        }
+
+        // Add event listeners for radio buttons
+        document.getElementById('singleSignature').addEventListener('change', toggleSignatureMode);
+        document.getElementById('allSignatures').addEventListener('change', toggleSignatureMode);
+
         document.getElementById('signature').addEventListener('input', function(e) {
             this.value = this.value.replace(/[^a-zA-Z]/g, '');
             generateString();
         });
 
-        document.getElementById('currentHole').addEventListener('change', generateString);
+        document.getElementById('signatures').addEventListener('input', function(e) {
+            generateBookmarksFromSignatures();
+        });
+
+        document.getElementById('currentHole').addEventListener('change', function() {
+            generateString();
+            generateBookmarksFromSignatures();
+        });
 
         document.getElementById('nextHole').addEventListener('change', function() {
             const currentHole = document.getElementById('currentHole').value;
@@ -342,15 +503,24 @@
             }
 
             generateString();
+            generateBookmarksFromSignatures();
         });
 
         document.getElementById('currentDepth').addEventListener('change', function() {
             updateRemoveDepthButton();
             generateString();
+            generateBookmarksFromSignatures();
         });
-        
-        document.getElementById('nextDepth').addEventListener('change', generateString);
-        document.getElementById('code').addEventListener('change', generateString);
+
+        document.getElementById('nextDepth').addEventListener('change', function() {
+            generateString();
+            generateBookmarksFromSignatures();
+        });
+
+        document.getElementById('code').addEventListener('change', function() {
+            generateString();
+            generateBookmarksFromSignatures();
+        });
 
         function generateString() {
             const currentHole = document.getElementById('currentHole').value;
@@ -360,6 +530,10 @@
             const signature = document.getElementById('signature').value;
             const codeSelect = document.getElementById('code');
             const code = codeSelect.value;
+
+            // Check signature mode
+            const mode = document.querySelector('input[name="signatureMode"]:checked').value;
+            const isAllSignaturesMode = mode === 'all';
 
             // Show/hide fields based on Current Hole
             const nextHoleGroup = document.getElementById('nextHoleGroup');
@@ -377,8 +551,14 @@
             } else {
                 nextHoleGroup.style.display = 'none';
                 currentDepthGroup.style.display = 'block';
-                nextDepthGroup.style.display = 'flex';
-                temporaryNameNextContainer.style.display = 'block';
+                // Only show next depth section if in single signature mode
+                if (isAllSignaturesMode) {
+                    nextDepthGroup.style.display = 'none';
+                    temporaryNameNextContainer.style.display = 'none';
+                } else {
+                    nextDepthGroup.style.display = 'flex';
+                    temporaryNameNextContainer.style.display = 'block';
+                }
 
                 if (currentDepth === '0') {
                     document.getElementById('temporaryNameCurrent').textContent = `${currentHole.toUpperCase()}`;
@@ -392,10 +572,6 @@
             // Enable/disable Make Current button based on Next Hole selection
             const makeCurrentButton = document.getElementById('makeCurrentButton');
             makeCurrentButton.disabled = !nextHole;
-
-            // Enable/disable Make Home button based on Current Hole
-            const makeHomeButton = document.getElementById('makeHomeButton');
-            makeHomeButton.disabled = isHome();
 
             // Update depth dropdown based on current hole
             populateDepthDropdown();
@@ -442,6 +618,67 @@
             document.getElementById('output').textContent = result;
         }
 
+        function generateBookmarksFromSignatures() {
+            const signaturesText = document.getElementById('signatures').value;
+            const currentHole = document.getElementById('currentHole').value;
+            const currentDepth = document.getElementById('currentDepth').value;
+            const nextDepth = document.getElementById('nextDepth').value;
+            const nextHole = document.getElementById('nextHole').value;
+            const code = document.getElementById('code').value;
+
+            // Clear existing bookmarks
+            clearBookmarks();
+
+            // Parse signatures line by line and collect them
+            const lines = signaturesText.split('\n');
+            const signatures = [];
+
+            for (let line of lines) {
+                // Check if line contains "Unstable Wormhole"
+                if (line.includes('Unstable Wormhole')) {
+                    // Extract the signature code (e.g., "NLC-815")
+                    const parts = line.trim().split(/\s+/);
+                    if (parts.length > 0) {
+                        const signatureCode = parts[0];
+                        // Parse signature: letters and number
+                        const match = signatureCode.match(/^([A-Za-z]+)-(\d+)$/);
+                        if (match) {
+                            const letters = match[1];
+                            const number = parseInt(match[2]);
+                            signatures.push({
+                                letters: letters,
+                                number: number
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Sort signatures by the letters (first 3 characters)
+            signatures.sort((a, b) => a.letters.localeCompare(b.letters));
+
+            // Generate bookmarks with incremented numbers
+            signatures.forEach((sig, i) => {
+                const incrementedNumber = sig.number + 1;
+                const signature = sig.letters.substring(0, 3);
+
+                // Generate bookmark based on current form state
+                let bookmarkText;
+                if (isHome()) {
+                    bookmarkText = ` ${nextHole || ''} ${signature} ${code}`.toUpperCase();
+                } else {
+                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                    const depthString = getAllDepths().join('');
+                    bookmarkText = ` ${currentHoleLetter}${depthString === '0' ? '' : depthString}-${i + 1} ${signature} `.toUpperCase();
+                }
+
+                // Add bookmark to the list
+                if (bookmarkText.trim()) {
+                    addBookmark(bookmarkText);
+                }
+            });
+        }
+
         let depthCounter = 1;
 
         function addDepth() {
@@ -460,12 +697,16 @@
             newSelect.value = '1';
 
             // Add event listener
-            newSelect.addEventListener('change', generateString);
+            newSelect.addEventListener('change', function() {
+                generateString();
+                generateBookmarksFromSignatures();
+            });
 
             depthContainer.appendChild(newSelect);
             depthCounter++;
             updateRemoveDepthButton();
             generateString();
+            generateBookmarksFromSignatures();
         }
 
         function removeDepth() {
@@ -478,6 +719,7 @@
                 depthFields[depthFields.length - 1].remove();
                 updateRemoveDepthButton();
                 generateString();
+                generateBookmarksFromSignatures();
             }
         }
 
@@ -526,16 +768,8 @@
                 document.getElementById('code').value = '';
                 clearExtraDepths();
                 generateString();
+                generateBookmarksFromSignatures();
             }
-        }
-
-        function makeHome() {
-            document.getElementById('currentHole').value = '*';
-            document.getElementById('nextHole').value = '';
-            document.getElementById('signature').value = '';
-            document.getElementById('code').value = '';
-            clearExtraDepths();
-            generateString();
         }
 
         function goToNext() {
@@ -550,17 +784,19 @@
             document.getElementById('signature').value = '';
 
             generateString();
+            generateBookmarksFromSignatures();
         }
 
         function resetDepth() {
             const nextDepthSelect = document.getElementById('nextDepth');
             nextDepthSelect.value = '1';
             generateString();
+            generateBookmarksFromSignatures();
         }
 
-        function copyToClipboard() {
-            const outputText = document.getElementById('output').textContent;
-            navigator.clipboard.writeText(outputText).then(function() {
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(function() {
                 const message = document.getElementById('copiedMessage');
                 message.style.display = 'block';
                 setTimeout(function() {
@@ -571,10 +807,48 @@
             });
         }
 
-        function copytemporaryNameCurrentToClipboard() {
-            const temporaryNameCurrentText = document.getElementById('temporaryNameCurrent').textContent;
-            navigator.clipboard.writeText(temporaryNameCurrentText).then(function() {
-                const message = document.getElementById('copiedtemporaryNameCurrentMessage');
+        // Bookmarks list management
+        let bookmarkCounter = 0;
+
+        function addBookmark(bookmarkText) {
+            if (!bookmarkText || bookmarkText.trim() === '') return;
+
+            const bookmarksList = document.getElementById('bookmarksList');
+            const bookmarkItem = document.createElement('div');
+            bookmarkItem.className = 'bookmark-item';
+            bookmarkItem.id = 'bookmark-' + bookmarkCounter;
+
+            const bookmarkTextSpan = document.createElement('span');
+            bookmarkTextSpan.className = 'bookmark-text';
+            bookmarkTextSpan.textContent = bookmarkText;
+            bookmarkTextSpan.id = 'bookmark-text-' + bookmarkCounter;
+            bookmarkTextSpan.onclick = function() {
+                copyBookmarkText('bookmark-text-' + bookmarkCounter);
+            };
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.onclick = function() {
+                copyBookmarkText('bookmark-text-' + bookmarkCounter);
+            };
+            copyButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            `;
+
+            bookmarkItem.appendChild(bookmarkTextSpan);
+            bookmarkItem.appendChild(copyButton);
+            bookmarksList.appendChild(bookmarkItem);
+
+            bookmarkCounter++;
+        }
+
+        function copyBookmarkText(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                const message = document.getElementById('copiedMessage');
                 message.style.display = 'block';
                 setTimeout(function() {
                     message.style.display = 'none';
@@ -584,17 +858,10 @@
             });
         }
 
-        function copytemporaryNameNextToClipboard() {
-            consttemporaryNameNextText = document.getElementById('temporaryNameNext').textContent;
-            navigator.clipboard.writeText(ttemporaryNameNextText).then(function() {
-                const message = document.getElementById('copiedtemporaryNameNexttMessage');
-                message.style.display = 'block';
-                setTimeout(function() {
-                    message.style.display = 'none';
-                }, 2000);
-            }).catch(function(err) {
-                alert('Failed to copy: ' + err);
-            });
+        function clearBookmarks() {
+            const bookmarksList = document.getElementById('bookmarksList');
+            bookmarksList.innerHTML = '';
+            bookmarkCounter = 0;
         }
 
         // Initialize with empty string
