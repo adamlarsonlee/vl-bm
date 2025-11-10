@@ -36,6 +36,10 @@
             box-sizing: border-box;
             font-size: 14px;
         }
+        .depth-field {
+            width: auto;
+            min-width: 60px;
+        }
         .output-container {
             margin-top: 30px;
             padding: 20px;
@@ -99,6 +103,26 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        .remove-button {
+            background-color: #f44336;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .remove-button:hover {
+            background-color: #da190b;
+        }
+        .remove-button:active {
+            background-color: #c0150a;
+        }
+        .remove-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         .copied-message {
             display: none;
             color: #4CAF50;
@@ -112,8 +136,8 @@
 
     <div class="form-group form-group-inline">
         <div>
-            <label for="nato">Current Hole:</label>
-            <select id="nato">
+            <label for="currentHole">Current Hole:</label>
+            <select id="currentHole">
                 <option value="*" selected>Home (J113508)</option>
             </select>
         </div>
@@ -131,9 +155,15 @@
     </div>
 
     <div id="currentDepthGroup" class="form-group">
-        <label for="number">Current Depth:</label>
-        <select id="number">
-        </select>
+        <label for="currentDepth">Current Depth:</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div id="depthContainer" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="currentDepth" class="depth-field">
+                </select>
+            </div>
+            <button class="action-button" onclick="addDepth()">Add Depth</button>
+            <button id="removeDepthButton" class="remove-button" onclick="removeDepth()">Remove Depth</button>
+        </div>
     </div>
 
     <div id="nextDepthGroup" class="form-group form-group-inline">
@@ -146,8 +176,8 @@
     </div>
 
     <div class="form-group">
-        <label for="textInput">Signature:</label>
-        <input type="text" id="textInput" maxlength="3" placeholder="First 3 letters of cosmic signature...">
+        <label for="signature">Signature:</label>
+        <input type="text" id="signature" maxlength="3" placeholder="First 3 letters of cosmic signature...">
     </div>
 
     <div class="form-group">
@@ -186,8 +216,10 @@
             'Yankee', 'Zulu'
         ];
 
+        const isHome = () => document.getElementById('currentHole').value === '*';
+
         // Populate Current Hole dropdown
-        const currentHoleSelect = document.getElementById('nato');
+        const currentHoleSelect = document.getElementById('currentHole');
         natoAlphabet.forEach(function(name) {
             const option = document.createElement('option');
             option.value = name;
@@ -211,14 +243,14 @@
         });
 
         // Function to populate depth dropdown based on current hole
-        function populateDepthDropdown(isHome) {
-            const numberSelect = document.getElementById('number');
+        function populateDepthDropdown() {
+            const numberSelect = document.getElementById('currentDepth');
             const currentValue = numberSelect.value;
 
             // Clear existing options
             numberSelect.innerHTML = '';
 
-            if (isHome) {
+            if (isHome()) {
                 // For Home, only show 0
                 const option = document.createElement('option');
                 option.value = '0';
@@ -260,24 +292,45 @@
         // Initial population (default to Home)
         populateDepthDropdown(true);
         populateNextDepthDropdown();
+        updateRemoveDepthButton();
 
-        // Validate text input to only allow alpha characters
-        document.getElementById('textInput').addEventListener('input', function(e) {
+        document.getElementById('signature').addEventListener('input', function(e) {
             this.value = this.value.replace(/[^a-zA-Z]/g, '');
             generateString();
         });
 
-        // Add event listeners to all form fields
-        document.getElementById('nato').addEventListener('change', generateString);
-        document.getElementById('nextHole').addEventListener('change', generateString);
-        document.getElementById('number').addEventListener('change', generateString);
+        document.getElementById('currentHole').addEventListener('change', generateString);
+
+        document.getElementById('nextHole').addEventListener('change', function() {
+            const currentHole = document.getElementById('currentHole').value;
+            const nextHole = document.getElementById('nextHole').value;
+            const codeSelect = document.getElementById('code');
+            document.getElementById('signature').value = '';
+            document.getElementById('code').value = '';
+
+            // Auto-select C3 when Current Hole is Home and Next Hole is Alpha
+            if (isHome() && nextHole === 'Alpha') {
+                codeSelect.value = 'C3';
+            }
+
+            // Auto-select C5 when Current Hole is Home and Next Hole is Bravo
+            if (isHome() && nextHole === 'Bravo') {
+                codeSelect.value = 'C5';
+            }
+
+            generateString();
+        });
+
+        document.getElementById('currentDepth').addEventListener('change', generateString);
         document.getElementById('nextDepth').addEventListener('change', generateString);
         document.getElementById('code').addEventListener('change', generateString);
 
         function generateString() {
-            const currentHole = document.getElementById('nato').value;
+            const currentHole = document.getElementById('currentHole').value;
+            const currentDepth = document.getElementById('currentDepth').value;
+            const nextDepth = document.getElementById('nextDepth').value;
             const nextHole = document.getElementById('nextHole').value;
-            const textInput = document.getElementById('textInput').value;
+            const signature = document.getElementById('signature').value;
             const codeSelect = document.getElementById('code');
             const code = codeSelect.value;
 
@@ -285,8 +338,8 @@
             const nextHoleGroup = document.getElementById('nextHoleGroup');
             const currentDepthGroup = document.getElementById('currentDepthGroup');
             const nextDepthGroup = document.getElementById('nextDepthGroup');
-            const isHome = currentHole === '*';
-            if (isHome) {
+
+            if (isHome()) {
                 nextHoleGroup.style.display = 'flex';
                 currentDepthGroup.style.display = 'none';
                 nextDepthGroup.style.display = 'none';
@@ -302,75 +355,143 @@
 
             // Enable/disable Make Home button based on Current Hole
             const makeHomeButton = document.getElementById('makeHomeButton');
-            makeHomeButton.disabled = isHome;
+            makeHomeButton.disabled = isHome();
 
             // Update depth dropdown based on current hole
-            populateDepthDropdown(isHome);
-
-            // Auto-select C3 when Current Hole is Home and Next Hole is Alpha
-            if (currentHole === '*' && nextHole === 'Alpha') {
-                codeSelect.value = 'C3';
-            }
-
-            // Auto-select C5 when Current Hole is Home and Next Hole is Bravo
-            if (currentHole === '*' && nextHole === 'Bravo') {
-                codeSelect.value = 'C5';
-            }
-
-            let result;
-
-            // If current hole is Home, just use next hole's name
-            if (currentHole === '*') {
-                result = ` ${nextHole || ''} ${textInput} ${code}`.toUpperCase();
-            } else {
-                // Get first letter of current hole
-                const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
-                // Build the string: space + current hole letter + space + text input + space + code
-                result = ` ${currentHoleLetter} ${textInput} ${code}`.toUpperCase();
-            }
-
-            // Update output
-            document.getElementById('output').textContent = result;
+            populateDepthDropdown();
 
             // Update UI based on validation
             const outputBox = document.getElementById('output');
             const copyButton = document.getElementById('copyButton');
 
             let isValid = false;
-            if (currentHole === '*') {
-                // For Home, require nextHole, textInput, and code
-                isValid = nextHole && textInput && code && textInput.length === 3;
+            if (isHome()) {
+                // For Home, require nextHole, signature, and code
+                isValid = nextHole && signature && code && signature.length === 3;
             } else {
-                // For other holes, require currentHole, textInput, and code
-                isValid = currentHole && textInput && code && textInput.length === 3;
+                // For other holes, require currentHole, signature, and code
+                isValid = currentHole && signature && code && signature.length === 3;
             }
 
             if (isValid) {
                 outputBox.classList.remove('invalid');
                 outputBox.classList.add('valid');
                 copyButton.disabled = false;
+
+                let result;
+
+                // If current hole is Home, just use next hole's name
+                if (isHome()) {
+                    result = ` ${nextHole || ''} ${signature} ${code}`.toUpperCase();
+                } else {
+                    // Get first letter of current hole
+                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                    const depthString = getAllDepths().join('');
+
+                    // Build the string: space + current hole letter + depths + next depth + space + signature + space + code
+                    result = ` ${currentHoleLetter}${depthString === '0' ? '' : depthString}-${nextDepth} ${signature} ${code}`.toUpperCase();
+                }
+
+                // Update output
+                 document.getElementById('output').textContent = result;
             } else {
                 outputBox.classList.remove('valid');
                 outputBox.classList.add('invalid');
                 copyButton.disabled = true;
+
+                // Update output
+                document.getElementById('output').textContent = ' ';
             }
+        }
+
+        let depthCounter = 1;
+
+        function addDepth() {
+            const depthContainer = document.getElementById('depthContainer');
+            const newSelect = document.createElement('select');
+            newSelect.className = 'depth-field';
+            newSelect.id = 'currentDepth' + depthCounter;
+
+            // Populate with 1-100
+            for (let i = 1; i <= 100; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                newSelect.appendChild(option);
+            }
+            newSelect.value = '1';
+
+            // Add event listener
+            newSelect.addEventListener('change', generateString);
+
+            depthContainer.appendChild(newSelect);
+            depthCounter++;
+            updateRemoveDepthButton();
+            generateString();
+        }
+
+        function removeDepth() {
+            const depthContainer = document.getElementById('depthContainer');
+            const depthFields = depthContainer.querySelectorAll('.depth-field');
+
+            // Only remove if there's more than one depth field
+            if (depthFields.length > 1) {
+                // Remove the last depth field
+                depthFields[depthFields.length - 1].remove();
+                updateRemoveDepthButton();
+                generateString();
+            }
+        }
+
+        function updateRemoveDepthButton() {
+            const depthContainer = document.getElementById('depthContainer');
+            const depthFields = depthContainer.querySelectorAll('.depth-field');
+            const removeButton = document.getElementById('removeDepthButton');
+
+            // Disable remove button if only one depth field left
+            removeButton.disabled = depthFields.length <= 1;
+        }
+
+        function getAllDepths() {
+            const depthFields = document.querySelectorAll('.depth-field');
+            const depths = [];
+            depthFields.forEach(field => {
+                const value = field.value;
+                if (value) {
+                    depths.push(value);
+                }
+            });
+            return depths;
+        }
+
+        function clearExtraDepths() {
+            const depthContainer = document.getElementById('depthContainer');
+            const depthFields = depthContainer.querySelectorAll('.depth-field');
+            // Remove all but the first depth field
+            for (let i = 1; i < depthFields.length; i++) {
+                depthFields[i].remove();
+            }
+            depthCounter = 1;
+            updateRemoveDepthButton();
         }
 
         function makeCurrentFromNext() {
             const nextHole = document.getElementById('nextHole').value;
             if (nextHole) {
-                document.getElementById('nato').value = nextHole;
-                document.getElementById('textInput').value = '';
+                document.getElementById('currentHole').value = nextHole;
+                document.getElementById('signature').value = '';
                 document.getElementById('code').value = '';
+                clearExtraDepths();
                 generateString();
             }
         }
 
         function makeHome() {
-            document.getElementById('nato').value = '*';
+            document.getElementById('currentHole').value = '*';
             document.getElementById('nextHole').value = '';
-            document.getElementById('textInput').value = '';
+            document.getElementById('signature').value = '';
             document.getElementById('code').value = '';
+            clearExtraDepths();
             generateString();
         }
 
@@ -383,8 +504,6 @@
                 nextDepthSelect.value = newDepth.toString();
             }
 
-            document.getElementById('textInput').value = '';
-            document.getElementById('code').value = '';
             generateString();
         }
 
