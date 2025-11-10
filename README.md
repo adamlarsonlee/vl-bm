@@ -1,5 +1,5 @@
 # Vapor Lock Bookmarking
 
-For a bookmarking system so complicated it needs its own website.
+For a [bookmarking system](https://wiki.vaporlock.space/wormholes/Bookmarking) so complicated it needs its own website.
 
-https://wiki.vaporlock.space/wormholes/Bookmarking
+***[See it in action](https://adamlarsonlee.github.io/vl-bm/)***
