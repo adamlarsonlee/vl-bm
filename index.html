@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vapor Lock Bookmark Builder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group-inline {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .form-group-inline > div {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .output-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .output-string {
+            font-family: monospace;
+            font-size: 18px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            margin: 10px 0;
+            word-break: break-all;
+            transition: background-color 0.3s;
+            white-space: pre-wrap;
+        }
+        .output-string.valid {
+            background-color: #d4edda;
+        }
+        .output-string.invalid {
+            background-color: #f8d7da;
+        }
+        .copy-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+        .copy-button:active {
+            background-color: #3d8b40;
+        }
+        .copy-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .action-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .action-button:hover {
+            background-color: #0b7dda;
+        }
+        .action-button:active {
+            background-color: #0a6bc0;
+        }
+        .action-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .copied-message {
+            display: none;
+            color: #4CAF50;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vapor Lock Bookmark Builder</h1>
+
+    <div class="form-group form-group-inline">
+        <div>
+            <label for="nato">Current Hole:</label>
+            <select id="nato">
+                <option value="*" selected>Home (J113508)</option>
+            </select>
+        </div>
+        <button id="makeHomeButton" class="action-button" onclick="makeHome()">Make Home</button>
+    </div>
+
+    <div id="nextHoleGroup" class="form-group form-group-inline">
+        <div>
+            <label for="nextHole">Next Hole:</label>
+            <select id="nextHole">
+                <option value="">Select...</option>
+            </select>
+        </div>
+        <button id="makeCurrentButton" class="action-button" onclick="makeCurrentFromNext()">Make Current</button>
+    </div>
+
+    <div id="currentDepthGroup" class="form-group">
+        <label for="number">Current Depth:</label>
+        <select id="number">
+        </select>
+    </div>
+
+    <div id="nextDepthGroup" class="form-group form-group-inline">
+        <div>
+            <label for="nextDepth">Next Depth:</label>
+            <select id="nextDepth">
+            </select>
+        </div>
+        <button class="action-button" onclick="goToNext()">Next</button>
+    </div>
+
+    <div class="form-group">
+        <label for="textInput">Signature:</label>
+        <input type="text" id="textInput" maxlength="3" placeholder="First 3 letters of cosmic signature...">
+    </div>
+
+    <div class="form-group">
+        <label for="code">Wormhole Type:</label>
+        <select id="code">
+            <option value="">Select...</option>
+            <option value="C1">C1</option>
+            <option value="C2">C2</option>
+            <option value="C3">C3</option>
+            <option value="C4">C4</option>
+            <option value="C5">C5</option>
+            <option value="C6">C6</option>
+            <option value="C13">C13</option>
+            <option value="HS">HS</option>
+            <option value="LS">LS</option>
+            <option value="NS">NS</option>
+            <option value="TC">TC</option>
+            <option value="??">Unknown</option>
+        </select>
+    </div>
+
+    <div class="output-container">
+        <h3>Bookmark:</h3>
+        <div class="output-string" id="output"></div>
+        <button id="copyButton" class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <div class="copied-message" id="copiedMessage">Copied!</div>
+    </div>
+
+    <script>
+        // NATO Alphabet
+        const natoAlphabet = [
+            'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot',
+            'Golf', 'Hotel', 'India', 'Juliett', 'Kilo', 'Lima',
+            'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo',
+            'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey', 'X-ray',
+            'Yankee', 'Zulu'
+        ];
+
+        // Populate Current Hole dropdown
+        const currentHoleSelect = document.getElementById('nato');
+        natoAlphabet.forEach(function(name) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === 'Charlie') {
+                option.disabled = true;
+            }
+            currentHoleSelect.appendChild(option);
+        });
+
+        // Populate Next Hole dropdown
+        const nextHoleSelect = document.getElementById('nextHole');
+        natoAlphabet.forEach(function(name) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === 'Charlie') {
+                option.disabled = true;
+            }
+            nextHoleSelect.appendChild(option);
+        });
+
+        // Function to populate depth dropdown based on current hole
+        function populateDepthDropdown(isHome) {
+            const numberSelect = document.getElementById('number');
+            const currentValue = numberSelect.value;
+
+            // Clear existing options
+            numberSelect.innerHTML = '';
+
+            if (isHome) {
+                // For Home, only show 0
+                const option = document.createElement('option');
+                option.value = '0';
+                option.textContent = '0';
+                numberSelect.appendChild(option);
+                numberSelect.value = '0';
+            } else {
+                // For other holes, show 1-100 and default to 1
+                for (let i = 0; i <= 100; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    numberSelect.appendChild(option);
+                }
+                // If current value was 0 or invalid, set to 1
+                if (!currentValue) {
+                    numberSelect.value = '1';
+                } else {
+                    numberSelect.value = currentValue;
+                }
+            }
+        }
+
+        // Function to populate next depth dropdown (1-100)
+        function populateNextDepthDropdown() {
+            const nextDepthSelect = document.getElementById('nextDepth');
+
+            // Populate 1-100
+            for (let i = 1; i <= 100; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                nextDepthSelect.appendChild(option);
+            }
+            // Default to 1
+            nextDepthSelect.value = '1';
+        }
+
+        // Initial population (default to Home)
+        populateDepthDropdown(true);
+        populateNextDepthDropdown();
+
+        // Validate text input to only allow alpha characters
+        document.getElementById('textInput').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^a-zA-Z]/g, '');
+            generateString();
+        });
+
+        // Add event listeners to all form fields
+        document.getElementById('nato').addEventListener('change', generateString);
+        document.getElementById('nextHole').addEventListener('change', generateString);
+        document.getElementById('number').addEventListener('change', generateString);
+        document.getElementById('nextDepth').addEventListener('change', generateString);
+        document.getElementById('code').addEventListener('change', generateString);
+
+        function generateString() {
+            const currentHole = document.getElementById('nato').value;
+            const nextHole = document.getElementById('nextHole').value;
+            const textInput = document.getElementById('textInput').value;
+            const codeSelect = document.getElementById('code');
+            const code = codeSelect.value;
+
+            // Show/hide fields based on Current Hole
+            const nextHoleGroup = document.getElementById('nextHoleGroup');
+            const currentDepthGroup = document.getElementById('currentDepthGroup');
+            const nextDepthGroup = document.getElementById('nextDepthGroup');
+            const isHome = currentHole === '*';
+            if (isHome) {
+                nextHoleGroup.style.display = 'flex';
+                currentDepthGroup.style.display = 'none';
+                nextDepthGroup.style.display = 'none';
+            } else {
+                nextHoleGroup.style.display = 'none';
+                currentDepthGroup.style.display = 'block';
+                nextDepthGroup.style.display = 'flex';
+            }
+
+            // Enable/disable Make Current button based on Next Hole selection
+            const makeCurrentButton = document.getElementById('makeCurrentButton');
+            makeCurrentButton.disabled = !nextHole;
+
+            // Enable/disable Make Home button based on Current Hole
+            const makeHomeButton = document.getElementById('makeHomeButton');
+            makeHomeButton.disabled = isHome;
+
+            // Update depth dropdown based on current hole
+            populateDepthDropdown(isHome);
+
+            // Auto-select C3 when Current Hole is Home and Next Hole is Alpha
+            if (currentHole === '*' && nextHole === 'Alpha') {
+                codeSelect.value = 'C3';
+            }
+
+            // Auto-select C5 when Current Hole is Home and Next Hole is Bravo
+            if (currentHole === '*' && nextHole === 'Bravo') {
+                codeSelect.value = 'C5';
+            }
+
+            let result;
+
+            // If current hole is Home, just use next hole's name
+            if (currentHole === '*') {
+                result = ` ${nextHole || ''} ${textInput} ${code}`.toUpperCase();
+            } else {
+                // Get first letter of current hole
+                const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                // Build the string: space + current hole letter + space + text input + space + code
+                result = ` ${currentHoleLetter} ${textInput} ${code}`.toUpperCase();
+            }
+
+            // Update output
+            document.getElementById('output').textContent = result;
+
+            // Update UI based on validation
+            const outputBox = document.getElementById('output');
+            const copyButton = document.getElementById('copyButton');
+
+            let isValid = false;
+            if (currentHole === '*') {
+                // For Home, require nextHole, textInput, and code
+                isValid = nextHole && textInput && code && textInput.length === 3;
+            } else {
+                // For other holes, require currentHole, textInput, and code
+                isValid = currentHole && textInput && code && textInput.length === 3;
+            }
+
+            if (isValid) {
+                outputBox.classList.remove('invalid');
+                outputBox.classList.add('valid');
+                copyButton.disabled = false;
+            } else {
+                outputBox.classList.remove('valid');
+                outputBox.classList.add('invalid');
+                copyButton.disabled = true;
+            }
+        }
+
+        function makeCurrentFromNext() {
+            const nextHole = document.getElementById('nextHole').value;
+            if (nextHole) {
+                document.getElementById('nato').value = nextHole;
+                document.getElementById('textInput').value = '';
+                document.getElementById('code').value = '';
+                generateString();
+            }
+        }
+
+        function makeHome() {
+            document.getElementById('nato').value = '*';
+            document.getElementById('nextHole').value = '';
+            document.getElementById('textInput').value = '';
+            document.getElementById('code').value = '';
+            generateString();
+        }
+
+        function goToNext() {
+            const nextDepthSelect = document.getElementById('nextDepth');
+            const currentNextDepth = parseInt(nextDepthSelect.value) || 0;
+            const newDepth = currentNextDepth + 1;
+
+            if (newDepth <= 100) {
+                nextDepthSelect.value = newDepth.toString();
+            }
+
+            document.getElementById('textInput').value = '';
+            document.getElementById('code').value = '';
+            generateString();
+        }
+
+        function copyToClipboard() {
+            const outputText = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(outputText).then(function() {
+                const message = document.getElementById('copiedMessage');
+                message.style.display = 'block';
+                setTimeout(function() {
+                    message.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
+        // Initialize with empty string
+        generateString();
+    </script>
+</body>
+</html>
