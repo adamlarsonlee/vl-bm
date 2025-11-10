@@ -41,8 +41,9 @@
             min-width: 60px;
         }
         .output-container {
-            margin-top: 30px;
-            padding: 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            padding: 0px 15px 0px 15px;
             background-color: white;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -132,8 +133,6 @@
     </style>
 </head>
 <body>
-    <h1>Vapor Lock Bookmark Builder</h1>
-
     <div class="form-group form-group-inline">
         <div>
             <label for="currentHole">Current Hole:</label>
@@ -161,9 +160,18 @@
                 <select id="currentDepth" class="depth-field">
                 </select>
             </div>
-            <button class="action-button" onclick="addDepth()">Add Depth</button>
+            <button id="addDepthButton" class="action-button" onclick="addDepth()">Add Depth</button>
             <button id="removeDepthButton" class="remove-button" onclick="removeDepth()">Remove Depth</button>
         </div>
+    </div>
+
+    <div class="output-container">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            Temporary Name:
+            <div class="output-string" id="temporaryNameCurrent" style="flex: 1;"></div>
+            <button id="compytemporaryNameCurrent" class="copy-button" onclick="copytemporaryNameCurrentToClipboard()">Copy to Clipboard</button>
+        </div>
+        <div class="copied-message" id="copiedtemporaryNameCurrentMessage">Copied!</div>
     </div>
 
     <div id="nextDepthGroup" class="form-group form-group-inline">
@@ -173,6 +181,16 @@
             </select>
         </div>
         <button class="action-button" onclick="goToNext()">Next</button>
+        <button class="remove-button" onclick="resetDepth()">Reset</button>
+    </div>
+
+    <div class="output-container" id="temporaryNameNextContainer">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            Temporary Name:
+            <div class="output-string" id="temporaryNameNext" style="flex: 1;"></div>
+            <button id="compytemporaryNameNext" class="copy-button" onclick="copytemporaryNameNexttToClipboard()">Copy to Clipboard</button>
+        </div>
+        <div class="copied-message" id="copiedtemporaryNameNextMessage">Copied!</div>
     </div>
 
     <div class="form-group">
@@ -200,9 +218,11 @@
     </div>
 
     <div class="output-container">
-        <h3>Bookmark:</h3>
-        <div class="output-string" id="output"></div>
-        <button id="copyButton" class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            Bookmark:
+            <div class="output-string" id="output" style="flex: 1;"></div>
+            <button id="copyButton" class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+        </div>
         <div class="copied-message" id="copiedMessage">Copied!</div>
     </div>
 
@@ -272,13 +292,16 @@
                     numberSelect.value = currentValue;
                 }
             }
+
+            // Update button states based on new depth value
+            updateRemoveDepthButton();
         }
 
         // Function to populate next depth dropdown (1-100)
         function populateNextDepthDropdown() {
             const nextDepthSelect = document.getElementById('nextDepth');
 
-            // Populate 1-100
+            // Populate 0-100
             for (let i = 1; i <= 100; i++) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -321,7 +344,11 @@
             generateString();
         });
 
-        document.getElementById('currentDepth').addEventListener('change', generateString);
+        document.getElementById('currentDepth').addEventListener('change', function() {
+            updateRemoveDepthButton();
+            generateString();
+        });
+        
         document.getElementById('nextDepth').addEventListener('change', generateString);
         document.getElementById('code').addEventListener('change', generateString);
 
@@ -338,15 +365,28 @@
             const nextHoleGroup = document.getElementById('nextHoleGroup');
             const currentDepthGroup = document.getElementById('currentDepthGroup');
             const nextDepthGroup = document.getElementById('nextDepthGroup');
+            const temporaryNameNextContainer = document.getElementById('temporaryNameNextContainer');
 
             if (isHome()) {
                 nextHoleGroup.style.display = 'flex';
                 currentDepthGroup.style.display = 'none';
                 nextDepthGroup.style.display = 'none';
+                temporaryNameNextContainer.style.display = 'none';
+
+                document.getElementById('temporaryNameCurrent').textContent = `${nextHole.toUpperCase() || ' '}`;
             } else {
                 nextHoleGroup.style.display = 'none';
                 currentDepthGroup.style.display = 'block';
                 nextDepthGroup.style.display = 'flex';
+                temporaryNameNextContainer.style.display = 'block';
+
+                if (currentDepth === '0') {
+                    document.getElementById('temporaryNameCurrent').textContent = `${currentHole.toUpperCase()}`;
+                } else {
+                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                    const depthString = getAllDepths().join('');
+                    document.getElementById('temporaryNameCurrent').textContent = `${currentHoleLetter}${depthString === currentHole.toUpperCase() ? '' : depthString}`;
+                }
             }
 
             // Enable/disable Make Current button based on Next Hole selection
@@ -364,44 +404,42 @@
             const outputBox = document.getElementById('output');
             const copyButton = document.getElementById('copyButton');
 
-            let isValid = false;
+            let isBookmarkValid = false;
             if (isHome()) {
                 // For Home, require nextHole, signature, and code
-                isValid = nextHole && signature && code && signature.length === 3;
+                isBookmarkValid = nextHole && signature && code && signature.length === 3;
             } else {
                 // For other holes, require currentHole, signature, and code
-                isValid = currentHole && signature && code && signature.length === 3;
+                isBookmarkValid = currentHole && signature && code && signature.length === 3;
             }
 
-            if (isValid) {
+            if (isBookmarkValid) {
                 outputBox.classList.remove('invalid');
                 outputBox.classList.add('valid');
                 copyButton.disabled = false;
-
-                let result;
-
-                // If current hole is Home, just use next hole's name
-                if (isHome()) {
-                    result = ` ${nextHole || ''} ${signature} ${code}`.toUpperCase();
-                } else {
-                    // Get first letter of current hole
-                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
-                    const depthString = getAllDepths().join('');
-
-                    // Build the string: space + current hole letter + depths + next depth + space + signature + space + code
-                    result = ` ${currentHoleLetter}${depthString === '0' ? '' : depthString}-${nextDepth} ${signature} ${code}`.toUpperCase();
-                }
-
-                // Update output
-                 document.getElementById('output').textContent = result;
             } else {
                 outputBox.classList.remove('valid');
                 outputBox.classList.add('invalid');
-                copyButton.disabled = true;
-
-                // Update output
-                document.getElementById('output').textContent = ' ';
             }
+
+            let result;
+
+            // If current hole is Home, just use next hole's name
+            if (isHome()) {
+                result = ` ${nextHole || ''} ${signature} ${code}`.toUpperCase();
+            } else {
+                // Get first letter of current hole
+                const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                const depthString = getAllDepths().join('');
+
+                // Build the string: space + current hole letter + depths + next depth + space + signature + space + code
+                result = ` ${currentHoleLetter}${depthString === '0' ? '' : depthString}-${nextDepth} ${signature} ${code}`.toUpperCase();
+
+                document.getElementById('temporaryNameNext').textContent = `${currentHoleLetter}${depthString === '0' ? '' : depthString}${nextDepth}`;
+            }
+
+            // Update output
+            document.getElementById('output').textContent = result;
         }
 
         let depthCounter = 1;
@@ -447,9 +485,14 @@
             const depthContainer = document.getElementById('depthContainer');
             const depthFields = depthContainer.querySelectorAll('.depth-field');
             const removeButton = document.getElementById('removeDepthButton');
+            const addButton = document.getElementById('addDepthButton');
 
             // Disable remove button if only one depth field left
             removeButton.disabled = depthFields.length <= 1;
+
+            // Disable add button if current depth is 0
+            const currentDepth = document.getElementById('currentDepth');
+            addButton.disabled = currentDepth && currentDepth.value === '0';
         }
 
         function getAllDepths() {
@@ -504,6 +547,14 @@
                 nextDepthSelect.value = newDepth.toString();
             }
 
+            document.getElementById('signature').value = '';
+
+            generateString();
+        }
+
+        function resetDepth() {
+            const nextDepthSelect = document.getElementById('nextDepth');
+            nextDepthSelect.value = '1';
             generateString();
         }
 
@@ -511,6 +562,32 @@
             const outputText = document.getElementById('output').textContent;
             navigator.clipboard.writeText(outputText).then(function() {
                 const message = document.getElementById('copiedMessage');
+                message.style.display = 'block';
+                setTimeout(function() {
+                    message.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
+        function copytemporaryNameCurrentToClipboard() {
+            const temporaryNameCurrentText = document.getElementById('temporaryNameCurrent').textContent;
+            navigator.clipboard.writeText(temporaryNameCurrentText).then(function() {
+                const message = document.getElementById('copiedtemporaryNameCurrentMessage');
+                message.style.display = 'block';
+                setTimeout(function() {
+                    message.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
+        function copytemporaryNameNextToClipboard() {
+            consttemporaryNameNextText = document.getElementById('temporaryNameNext').textContent;
+            navigator.clipboard.writeText(ttemporaryNameNextText).then(function() {
+                const message = document.getElementById('copiedtemporaryNameNexttMessage');
                 message.style.display = 'block';
                 setTimeout(function() {
                     message.style.display = 'none';
