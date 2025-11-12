@@ -1,0 +1,13 @@
+NLC-815    Unstable Wormhole            0.0%    5.43 AU
+WKQ-438    Cosmic Anomaly    Combat Site    Frontier Barracks    100.0%    6.53 AU
+IVU-720    Cosmic Anomaly    Ore Site    Unusual Core Deposit    100.0%    8.19 AU
+CVA-368    Cosmic Anomaly    Combat Site    Frontier Barracks    100.0%    8.65 AU
+MLN-010    Cosmic Anomaly    Ore Site    Average Frontier Deposit    100.0%    8.96 AU
+PBK-645    Unstable Wormhole            0.0%    9.14 AU
+DTP-775    Unstable Wormhole            0.0%    12.42 AU
+UUN-208    Unstable Wormhole            0.0%    12.54 AU
+RAQ-903    Unstable Wormhole            0.0%    16.71 AU
+GKY-116    Unstable Wormhole            0.0%    20.44 AU
+AFD-266    Cosmic Signature            0.0%    20.44 AU
+ZFD-202    Cosmic Signature            0.0%    20.44 AU
+YUC-544    Cosmic Signature            0.0%    20.44 AU
