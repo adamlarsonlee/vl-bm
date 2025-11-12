@@ -153,8 +153,9 @@
         }
         .radio-group {
             display: flex;
-            gap: 20px;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
         }
         .radio-option {
             display: flex;
@@ -171,14 +172,49 @@
             font-weight: normal;
             cursor: pointer;
         }
-        .bookmarks-section {
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 28px;
+            cursor: pointer;
+        }
+        .checkbox-option input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+        .checkbox-option label {
+            margin-bottom: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .lists-container {
             background-color: white;
             padding: 20px;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 20px;
+            display: none;
         }
-        .bookmarks-section h3 {
+        .lists-container.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .bookmarks-column {
+            display: flex;
+            flex-direction: column;
+        }
+        .bookmarks-column h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .temp-names-column {
+            display: flex;
+            flex-direction: column;
+        }
+        .temp-names-column h3 {
             margin-top: 0;
             margin-bottom: 15px;
             font-size: 18px;
@@ -188,12 +224,26 @@
             flex-direction: column;
             gap: 10px;
         }
+        .temp-names-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
         .bookmark-item {
             display: flex;
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
-            padding: 10px;
+            padding: 5px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .temp-name-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 5px;
             background-color: #f5f5f5;
             border-radius: 4px;
         }
@@ -205,6 +255,18 @@
             cursor: pointer;
         }
         .bookmark-text:hover {
+            background-color: #e0e0e0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .temp-name-text {
+            font-family: monospace;
+            font-size: 16px;
+            flex: 1;
+            word-break: break-all;
+            cursor: pointer;
+        }
+        .temp-name-text:hover {
             background-color: #e0e0e0;
             padding: 5px;
             border-radius: 4px;
@@ -222,6 +284,10 @@
             <div class="radio-option">
                 <input type="radio" id="allSignatures" name="signatureMode" value="all">
                 <label for="allSignatures">All Signatures</label>
+            </div>
+            <div class="checkbox-option">
+                <input type="checkbox" id="includeCosmicSignatures">
+                <label for="includeCosmicSignatures">Include Cosmic Signatures</label>
             </div>
         </div>
     </div>
@@ -333,10 +399,18 @@
         </div>
     </div>
 
-    <div class="bookmarks-section" id="bookmarksSection" style="display: none;">
-        <h3>Bookmarks</h3>
-        <div id="bookmarksList" class="bookmarks-list">
-            <!-- Dynamic bookmark items will be added here -->
+    <div class="lists-container" id="listsContainer">
+        <div class="bookmarks-column">
+            <h3>Bookmarks</h3>
+            <div id="bookmarksList" class="bookmarks-list">
+                <!-- Dynamic bookmark items will be added here -->
+            </div>
+        </div>
+        <div class="temp-names-column">
+            <h3>Temporary Names</h3>
+            <div id="tempNamesList" class="temp-names-list">
+                <!-- Dynamic temporary name items will be added here -->
+            </div>
         </div>
     </div>
 
@@ -439,17 +513,19 @@
             const signatureGroup = document.getElementById('signatureGroup');
             const signaturesGroup = document.getElementById('signaturesGroup');
             const bookmarkSection = document.getElementById('bookmarkSection');
-            const bookmarksSection = document.getElementById('bookmarksSection');
+            const listsContainer = document.getElementById('listsContainer');
             const nextDepthGroup = document.getElementById('nextDepthGroup');
             const temporaryNameNextContainer = document.getElementById('temporaryNameNextContainer');
             const wormholeTypeGroup = document.getElementById('wormholeTypeGroup');
+            const includeCosmicCheckbox = document.getElementById('includeCosmicSignatures').parentElement;
 
             if (mode === 'single') {
                 signatureGroup.style.display = 'block';
                 signaturesGroup.style.display = 'none';
                 bookmarkSection.style.display = 'block';
-                bookmarksSection.style.display = 'none';
+                listsContainer.classList.remove('active');
                 wormholeTypeGroup.style.display = 'block';
+                includeCosmicCheckbox.style.display = 'none';
                 // Show next depth only if not at Home - will be controlled by generateString()
                 if (!isHome()) {
                     nextDepthGroup.style.display = 'flex';
@@ -459,8 +535,9 @@
                 signatureGroup.style.display = 'none';
                 signaturesGroup.style.display = 'block';
                 bookmarkSection.style.display = 'none';
-                bookmarksSection.style.display = 'block';
+                listsContainer.classList.add('active');
                 wormholeTypeGroup.style.display = 'none';
+                includeCosmicCheckbox.style.display = 'flex';
                 // Hide next depth section in all signatures mode
                 nextDepthGroup.style.display = 'none';
                 temporaryNameNextContainer.style.display = 'none';
@@ -470,6 +547,11 @@
         // Add event listeners for radio buttons
         document.getElementById('singleSignature').addEventListener('change', toggleSignatureMode);
         document.getElementById('allSignatures').addEventListener('change', toggleSignatureMode);
+
+        // Add event listener for cosmic signatures checkbox
+        document.getElementById('includeCosmicSignatures').addEventListener('change', function() {
+            generateBookmarksFromSignatures();
+        });
 
         document.getElementById('signature').addEventListener('input', function(e) {
             this.value = this.value.replace(/[^a-zA-Z]/g, '');
@@ -522,6 +604,24 @@
             generateBookmarksFromSignatures();
         });
 
+        function updateTemporaryNameCurrent() {
+            const currentHole = document.getElementById('currentHole').value;
+            const currentDepth = document.getElementById('currentDepth').value;
+            const nextHole = document.getElementById('nextHole').value;
+
+            if (isHome()) {
+                document.getElementById('temporaryNameCurrent').textContent = `${nextHole.toUpperCase() || ' '}`;
+            } else {
+                if (currentDepth === '0') {
+                    document.getElementById('temporaryNameCurrent').textContent = `${currentHole.toUpperCase()}`;
+                } else {
+                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
+                    const depthString = getAllDepths().join('');
+                    document.getElementById('temporaryNameCurrent').textContent = `${currentHoleLetter}${depthString === currentHole.toUpperCase() ? '' : depthString}`;
+                }
+            }
+        }
+
         function generateString() {
             const currentHole = document.getElementById('currentHole').value;
             const currentDepth = document.getElementById('currentDepth').value;
@@ -546,8 +646,6 @@
                 currentDepthGroup.style.display = 'none';
                 nextDepthGroup.style.display = 'none';
                 temporaryNameNextContainer.style.display = 'none';
-
-                document.getElementById('temporaryNameCurrent').textContent = `${nextHole.toUpperCase() || ' '}`;
             } else {
                 nextHoleGroup.style.display = 'none';
                 currentDepthGroup.style.display = 'block';
@@ -559,15 +657,9 @@
                     nextDepthGroup.style.display = 'flex';
                     temporaryNameNextContainer.style.display = 'block';
                 }
-
-                if (currentDepth === '0') {
-                    document.getElementById('temporaryNameCurrent').textContent = `${currentHole.toUpperCase()}`;
-                } else {
-                    const currentHoleLetter = currentHole ? currentHole.charAt(0) : '';
-                    const depthString = getAllDepths().join('');
-                    document.getElementById('temporaryNameCurrent').textContent = `${currentHoleLetter}${depthString === currentHole.toUpperCase() ? '' : depthString}`;
-                }
             }
+
+            updateTemporaryNameCurrent();
 
             // Enable/disable Make Current button based on Next Hole selection
             const makeCurrentButton = document.getElementById('makeCurrentButton');
@@ -634,33 +726,35 @@
             const signatures = [];
 
             for (let line of lines) {
-                // Check if line contains "Unstable Wormhole"
-                if (line.includes('Unstable Wormhole')) {
+                if (line.includes('Unstable Wormhole') || line.includes('Cosmic Signature')) {
                     // Extract the signature code (e.g., "NLC-815")
                     const parts = line.trim().split(/\s+/);
                     if (parts.length > 0) {
-                        const signatureCode = parts[0];
-                        // Parse signature: letters and number
-                        const match = signatureCode.match(/^([A-Za-z]+)-(\d+)$/);
-                        if (match) {
-                            const letters = match[1];
-                            const number = parseInt(match[2]);
-                            signatures.push({
-                                letters: letters,
-                                number: number
-                            });
-                        }
+                        const isCosmicSignature = line.includes('Cosmic Signature');
+                        const isUnstableWormhole = line.includes('Unstable Wormhole');
+                        signatures.push({
+                            code: parts[0].substring(0, 3),
+                            isCosmicSignature: isCosmicSignature,
+                            isUnstableWormhole: isUnstableWormhole
+                        });
                     }
                 }
             }
 
-            // Sort signatures by the letters (first 3 characters)
-            signatures.sort((a, b) => a.letters.localeCompare(b.letters));
+            // Filter out cosmic signatures if checkbox is unchecked
+            const includeCosmicSignatures = document.getElementById('includeCosmicSignatures').checked;
+            const filteredSignatures = includeCosmicSignatures
+                ? signatures
+                : signatures.filter(sig => !sig.isCosmicSignature);
 
-            // Generate bookmarks with incremented numbers
-            signatures.forEach((sig, i) => {
-                const incrementedNumber = sig.number + 1;
-                const signature = sig.letters.substring(0, 3);
+            // Sort signatures
+            filteredSignatures.sort((a, b) => a.code.localeCompare(b.code));
+
+            // Generate bookmarks
+            filteredSignatures.forEach((sig, i) => {
+                const signature = sig.code.substring(0, 3);
+                const isCosmicSignature = sig.isCosmicSignature;
+                const isUnstableWormhole = sig.isUnstableWormhole;
 
                 // Generate bookmark based on current form state
                 let bookmarkText;
@@ -674,7 +768,7 @@
 
                 // Add bookmark to the list
                 if (bookmarkText.trim()) {
-                    addBookmark(bookmarkText);
+                    addBookmark(bookmarkText, isCosmicSignature, isUnstableWormhole);
                 }
             });
         }
@@ -810,61 +904,102 @@
         // Bookmarks list management
         let bookmarkCounter = 0;
 
-        function addBookmark(bookmarkText) {
+        function addBookmark(bookmarkText, isCosmicSignature = false, isUnstableWormhole = false) {
             if (!bookmarkText || bookmarkText.trim() === '') return;
 
-            const bookmarksList = document.getElementById('bookmarksList');
-            const bookmarkItem = document.createElement('div');
-            bookmarkItem.className = 'bookmark-item';
-            bookmarkItem.id = 'bookmark-' + bookmarkCounter;
-
-            const bookmarkTextSpan = document.createElement('span');
-            bookmarkTextSpan.className = 'bookmark-text';
-            bookmarkTextSpan.textContent = bookmarkText;
-            bookmarkTextSpan.id = 'bookmark-text-' + bookmarkCounter;
-            bookmarkTextSpan.onclick = function() {
-                copyBookmarkText('bookmark-text-' + bookmarkCounter);
-            };
-
-            const copyButton = document.createElement('button');
-            copyButton.className = 'copy-button';
-            copyButton.onclick = function() {
-                copyBookmarkText('bookmark-text-' + bookmarkCounter);
-            };
-            copyButton.innerHTML = `
+            const copyIcon = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
             `;
 
+            const bookmarksList = document.getElementById('bookmarksList');
+            const bookmarkItem = document.createElement('div');
+            bookmarkItem.className = 'bookmark-item';
+            bookmarkItem.id = 'bookmark-' + bookmarkCounter;
+
+            // Apply light yellow background for Cosmic Signatures
+            if (isCosmicSignature) {
+                bookmarkItem.style.backgroundColor = '#ffffe0';
+            }
+            // Apply light green background for Unstable Wormholes
+            else if (isUnstableWormhole) {
+                bookmarkItem.style.backgroundColor = '#d4edda';
+            }
+
+            const bookmarkTextSpan = document.createElement('span');
+            bookmarkTextSpan.className = 'bookmark-text';
+            bookmarkTextSpan.textContent = bookmarkText;
+            bookmarkTextSpan.id = 'bookmark-text-' + bookmarkCounter;
+            bookmarkTextSpan.onclick = () => copyToClipboard(bookmarkTextSpan.id);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.onclick = () => copyToClipboard(bookmarkTextSpan.id);
+            copyButton.innerHTML = copyIcon;
+
             bookmarkItem.appendChild(bookmarkTextSpan);
             bookmarkItem.appendChild(copyButton);
             bookmarksList.appendChild(bookmarkItem);
 
+            // Extract temporary name (first part before space, without dash)
+            const tempName = bookmarkText.trim().split(' ')[0].replace('-', '');
+            addTempName(tempName, isCosmicSignature, isUnstableWormhole);
+
             bookmarkCounter++;
         }
 
-        function copyBookmarkText(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(function() {
-                const message = document.getElementById('copiedMessage');
-                message.style.display = 'block';
-                setTimeout(function() {
-                    message.style.display = 'none';
-                }, 2000);
-            }).catch(function(err) {
-                alert('Failed to copy: ' + err);
-            });
+        function addTempName(tempNameText, isCosmicSignature = false, isUnstableWormhole = false) {
+            if (!tempNameText || tempNameText.trim() === '') return;
+
+            const copyIcon = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            `;
+
+            const tempNamesList = document.getElementById('tempNamesList');
+            const tempNameItem = document.createElement('div');
+            tempNameItem.className = 'temp-name-item';
+            tempNameItem.id = 'temp-name-' + bookmarkCounter;
+
+            // Apply light yellow background for Cosmic Signatures
+            if (isCosmicSignature) {
+                tempNameItem.style.backgroundColor = '#ffffe0';
+            }
+            // Apply light green background for Unstable Wormholes
+            else if (isUnstableWormhole) {
+                tempNameItem.style.backgroundColor = '#d4edda';
+            }
+
+            const tempNameTextSpan = document.createElement('span');
+            tempNameTextSpan.className = 'temp-name-text';
+            tempNameTextSpan.textContent = tempNameText;
+            tempNameTextSpan.id = 'temp-name-text-' + bookmarkCounter;
+            tempNameTextSpan.onclick = () => copyToClipboard(tempNameTextSpan.id);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.onclick = () => copyToClipboard(tempNameTextSpan.id);
+            copyButton.innerHTML = copyIcon;
+
+            tempNameItem.appendChild(tempNameTextSpan);
+            tempNameItem.appendChild(copyButton);
+            tempNamesList.appendChild(tempNameItem);
         }
 
         function clearBookmarks() {
             const bookmarksList = document.getElementById('bookmarksList');
             bookmarksList.innerHTML = '';
+            const tempNamesList = document.getElementById('tempNamesList');
+            tempNamesList.innerHTML = '';
             bookmarkCounter = 0;
         }
 
-        // Initialize with empty string
+        // Initialize
+        toggleSignatureMode();
         generateString();
     </script>
 </body>
