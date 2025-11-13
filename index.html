@@ -4,290 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vapor Lock Bookmark Builder</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group-inline {
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-        }
-        .form-group-inline > div {
-            flex: 1;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input, textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        textarea {
-            font-family: monospace;
-            resize: vertical;
-            overflow-y: auto;
-        }
-        .depth-field {
-            width: auto;
-            min-width: 60px;
-        }
-        .output-container {
-            margin-top: 15px;
-            margin-bottom: 15px;
-            padding: 0px 15px 0px 15px;
-            background-color: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .output-string {
-            font-family: monospace;
-            font-size: 18px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-            margin: 10px 0;
-            word-break: break-all;
-            transition: background-color 0.3s;
-            white-space: pre-wrap;
-            cursor: pointer;
-        }
-        .output-string:hover {
-            background-color: #e0e0e0;
-        }
-        .output-string.valid {
-            background-color: #d4edda;
-        }
-        .output-string.invalid {
-            background-color: #f8d7da;
-        }
-        .copy-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .copy-button:hover {
-            background-color: #45a049;
-        }
-        .copy-button:active {
-            background-color: #3d8b40;
-        }
-        .copy-button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .action-button {
-            background-color: #2196F3;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        .action-button:hover {
-            background-color: #0b7dda;
-        }
-        .action-button:active {
-            background-color: #0a6bc0;
-        }
-        .action-button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .remove-button {
-            background-color: #f44336;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        .remove-button:hover {
-            background-color: #da190b;
-        }
-        .remove-button:active {
-            background-color: #c0150a;
-        }
-        .remove-button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .copied-message {
-            display: none;
-            color: #4CAF50;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        .settings-section {
-            background-color: white;
-            padding: 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .settings-section h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-start;
-        }
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .radio-option input[type="radio"] {
-            width: auto;
-            cursor: pointer;
-        }
-        .radio-option label {
-            margin-bottom: 0;
-            font-weight: normal;
-            cursor: pointer;
-        }
-        .checkbox-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: 28px;
-            cursor: pointer;
-        }
-        .checkbox-option input[type="checkbox"] {
-            width: auto;
-            cursor: pointer;
-        }
-        .checkbox-option label {
-            margin-bottom: 0;
-            font-weight: normal;
-            cursor: pointer;
-        }
-        .lists-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 20px;
-            display: none;
-        }
-        .lists-container.active {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .bookmarks-column {
-            display: flex;
-            flex-direction: column;
-        }
-        .bookmarks-column h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        .temp-names-column {
-            display: flex;
-            flex-direction: column;
-        }
-        .temp-names-column h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        .bookmarks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .temp-names-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .bookmark-item {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 5px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-        }
-        .temp-name-item {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 5px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-        }
-        .bookmark-text {
-            font-family: monospace;
-            font-size: 16px;
-            flex: 1;
-            word-break: break-all;
-            cursor: pointer;
-        }
-        .bookmark-text:hover {
-            background-color: #e0e0e0;
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .temp-name-text {
-            font-family: monospace;
-            font-size: 16px;
-            flex: 1;
-            word-break: break-all;
-            cursor: pointer;
-        }
-        .temp-name-text:hover {
-            background-color: #e0e0e0;
-            padding: 5px;
-            border-radius: 4px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="settings-section">
         <h3>Settings</h3>
-        <div class="radio-group">
-            <div class="radio-option">
-                <input type="radio" id="singleSignature" name="signatureMode" value="single" checked>
-                <label for="singleSignature">Single Signature</label>
+        <div class="settings-columns">
+            <div class="settings-column">
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="singleSignature" name="signatureMode" value="single" checked>
+                        <label for="singleSignature">Single Signature</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="allSignatures" name="signatureMode" value="all">
+                        <label for="allSignatures">All Signatures</label>
+                    </div>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="includeCosmicSignatures">
+                        <label for="includeCosmicSignatures">Include Cosmic Signatures</label>
+                    </div>
+                </div>
             </div>
-            <div class="radio-option">
-                <input type="radio" id="allSignatures" name="signatureMode" value="all">
-                <label for="allSignatures">All Signatures</label>
-            </div>
-            <div class="checkbox-option">
-                <input type="checkbox" id="includeCosmicSignatures">
-                <label for="includeCosmicSignatures">Include Cosmic Signatures</label>
+            <div class="settings-column">
+                <div class="checkbox-option" style="margin-left: 0; margin-bottom: 15px;">
+                    <input type="checkbox" id="darkModeToggle">
+                    <label for="darkModeToggle">Dark Mode</label>
+                </div>
+                <div class="checkbox-option" style="margin-left: 0; margin-bottom: 15px;">
+                    <input type="checkbox" id="grandmaModeToggle">
+                    <label for="grandmaModeToggle">Grandma Mode</label>
+                </div>
             </div>
         </div>
     </div>
@@ -426,31 +173,68 @@
             'Yankee', 'Zulu'
         ];
 
+        const natoAlphabetGrandMode = natoAlphabet.map(name => name === 'Golf' ? 'Grandma' : name);
+
         const isHome = () => document.getElementById('currentHole').value === '*';
 
-        // Populate Current Hole dropdown
-        const currentHoleSelect = document.getElementById('currentHole');
-        natoAlphabet.forEach(function(name) {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            if (name === 'Charlie') {
-                option.disabled = true;
-            }
-            currentHoleSelect.appendChild(option);
-        });
+        // Function to populate hole dropdowns
+        function populateHoleDropdowns() {
+            const grandmaMode = document.getElementById('grandmaModeToggle').checked;
+            const currentHoleSelect = document.getElementById('currentHole');
+            const nextHoleSelect = document.getElementById('nextHole');
 
-        // Populate Next Hole dropdown
-        const nextHoleSelect = document.getElementById('nextHole');
-        natoAlphabet.forEach(function(name) {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            if (name === 'Charlie') {
-                option.disabled = true;
+            // Save current selections
+            const currentHoleValue = currentHoleSelect.value;
+            const nextHoleValue = nextHoleSelect.value;
+
+            // Clear existing options (except Home for currentHole)
+            currentHoleSelect.innerHTML = '<option value="*" selected>Home (J113508)</option>';
+            nextHoleSelect.innerHTML = '<option value="">Select...</option>';
+
+            // Populate dropdowns
+            (grandmaMode ? natoAlphabetGrandMode : natoAlphabet).forEach(function(name) {
+
+                // Add to Current Hole dropdown
+                const currentOption = document.createElement('option');
+                currentOption.value = name;
+                currentOption.textContent = name;
+                if (name === 'Charlie') {
+                    currentOption.disabled = true;
+                }
+                currentHoleSelect.appendChild(currentOption);
+
+                // Add to Next Hole dropdown
+                const nextOption = document.createElement('option');
+                nextOption.value = name;
+                nextOption.textContent = name;
+                if (name === 'Charlie') {
+                    nextOption.disabled = true;
+                }
+                nextHoleSelect.appendChild(nextOption);
+            });
+
+            // Restore previous selections
+            if (currentHoleValue) {
+                if (grandmaMode && currentHoleValue === 'Golf') {
+                    currentHoleSelect.value = 'Grandma';
+                } else if (!grandmaMode && currentHoleValue === 'Grandma') {
+                    currentHoleSelect.value = 'Golf';
+                } else {
+                    currentHoleSelect.value = currentHoleValue;
+                }
             }
-            nextHoleSelect.appendChild(option);
-        });
+            if (nextHoleValue) {
+                if (grandmaMode && nextHoleValue === 'Golf') {
+                    nextHoleSelect.value = 'Grandma';
+                    updateTemporaryNameCurrent();
+                } else if (!grandmaMode && nextHoleValue === 'Grandma') {
+                    nextHoleSelect.value = 'Golf';  
+                    updateTemporaryNameCurrent();
+                } else {
+                    nextHoleSelect.value = nextHoleValue;
+                }
+            }
+        }
 
         // Function to populate depth dropdown based on current hole
         function populateDepthDropdown() {
@@ -545,12 +329,50 @@
         }
 
         // Add event listeners for radio buttons
-        document.getElementById('singleSignature').addEventListener('change', toggleSignatureMode);
-        document.getElementById('allSignatures').addEventListener('change', toggleSignatureMode);
+        document.getElementById('singleSignature').addEventListener('change', function() {
+            toggleSignatureMode();
+            saveSettings();
+        });
+        document.getElementById('allSignatures').addEventListener('change', function() {
+            toggleSignatureMode();
+            saveSettings();
+        });
 
         // Add event listener for cosmic signatures checkbox
         document.getElementById('includeCosmicSignatures').addEventListener('change', function() {
             generateBookmarksFromSignatures();
+            saveSettings();
+        });
+
+        // Dark mode toggle functionality
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        // Load dark mode preference from localStorage
+        const isDarkMode = () => localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode()) {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        }
+
+        // Add event listener for dark mode toggle
+        darkModeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'false');
+            }
+            saveSettings();
+        });
+
+        // Grandma mode toggle functionality
+        const grandmaModeToggle = document.getElementById('grandmaModeToggle');
+
+        // Add event listener for grandma mode toggle
+        grandmaModeToggle.addEventListener('change', function() {
+            populateHoleDropdowns();
+            saveSettings();
         });
 
         document.getElementById('signature').addEventListener('input', function(e) {
@@ -921,11 +743,19 @@
 
             // Apply light yellow background for Cosmic Signatures
             if (isCosmicSignature) {
-                bookmarkItem.style.backgroundColor = '#ffffe0';
+                if (isDarkMode()) {
+                    bookmarkItem.style.backgroundColor = '#ba8e23';
+                } else {
+                    bookmarkItem.style.backgroundColor = '#ffffc5';
+                }
             }
             // Apply light green background for Unstable Wormholes
             else if (isUnstableWormhole) {
-                bookmarkItem.style.backgroundColor = '#d4edda';
+                if (isDarkMode()) {
+                    bookmarkItem.style.backgroundColor = '#06402b';
+                } else {
+                    bookmarkItem.style.backgroundColor = '#d4edda';
+                }
             }
 
             const bookmarkTextSpan = document.createElement('span');
@@ -965,13 +795,21 @@
             tempNameItem.className = 'temp-name-item';
             tempNameItem.id = 'temp-name-' + bookmarkCounter;
 
-            // Apply light yellow background for Cosmic Signatures
+                        // Apply light yellow background for Cosmic Signatures
             if (isCosmicSignature) {
-                tempNameItem.style.backgroundColor = '#ffffe0';
+                if (isDarkMode()) {
+                    tempNameItem.style.backgroundColor = '#ba8e23';
+                } else {
+                    tempNameItem.style.backgroundColor = '#ffffc5';
+                }
             }
             // Apply light green background for Unstable Wormholes
             else if (isUnstableWormhole) {
-                tempNameItem.style.backgroundColor = '#d4edda';
+                if (isDarkMode()) {
+                    tempNameItem.style.backgroundColor = '#06402b';
+                } else {
+                    tempNameItem.style.backgroundColor = '#d4edda';
+                }
             }
 
             const tempNameTextSpan = document.createElement('span');
@@ -998,9 +836,50 @@
             bookmarkCounter = 0;
         }
 
+        // Settings management functions
+        function saveSettings() {
+            const settings = {
+                signatureMode: document.querySelector('input[name="signatureMode"]:checked').value,
+                includeCosmicSignatures: document.getElementById('includeCosmicSignatures').checked,
+                grandmaMode: document.getElementById('grandmaModeToggle').checked
+            };
+            localStorage.setItem('vaporLockSettings', JSON.stringify(settings));
+
+            generateBookmarksFromSignatures();
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('vaporLockSettings');
+            if (!savedSettings) return;
+
+            try {
+                const settings = JSON.parse(savedSettings);
+
+                // Load signature mode
+                if (settings.signatureMode) {
+                    document.getElementById(settings.signatureMode === 'single' ? 'singleSignature' : 'allSignatures').checked = true;
+                }
+
+                // Load include cosmic signatures
+                if (settings.includeCosmicSignatures !== undefined) {
+                    document.getElementById('includeCosmicSignatures').checked = settings.includeCosmicSignatures;
+                }
+
+                // Load grandma mode
+                if (settings.grandmaMode !== undefined) {
+                    document.getElementById('grandmaModeToggle').checked = settings.grandmaMode;
+                }
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+        }
+
         // Initialize
+        loadSettings();
+        populateHoleDropdowns();
         toggleSignatureMode();
         generateString();
+        generateBookmarksFromSignatures();
     </script>
 </body>
 </html>
