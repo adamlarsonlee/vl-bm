@@ -335,3 +335,45 @@ body.dark-mode .bookmark-text:hover,
 body.dark-mode .temp-name-text:hover {
     background-color: #3a3a3a;
 }
+
+/* EVE Login Button */
+.eve-login-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.eve-login-container a {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.eve-login-container a:hover {
+    transform: translateY(-2px);
+}
+
+.eve-login-container a:active {
+    transform: translateY(0);
+}
+
+.eve-login-container img {
+    display: block;
+    height: auto;
+    max-width: 100%;
+}
+
+#eveLoggedInSection {
+    padding: 15px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+body.dark-mode #eveLoggedInSection {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+body.dark-mode #characterLocation {
+    color: #aaa !important;
+}
