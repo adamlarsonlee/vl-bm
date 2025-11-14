@@ -18,7 +18,7 @@
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <span id="characterName" style="font-size: 18px; font-weight: bold;"></span>
                 <span id="characterLocation" style="font-size: 16px; color: #666;"></span>
-                <button class="action-button" onclick="refreshLocation()">Refresh Location</button>
+                <button class="action-button" onclick="refreshLocation()">Refresh</button>
                 <button class="remove-button" onclick="logoutFromEve()">Logout</button>
             </div>
         </div>
@@ -40,6 +40,10 @@
                     <div class="checkbox-option">
                         <input type="checkbox" id="includeCosmicSignatures">
                         <label for="includeCosmicSignatures">Include Cosmic Signatures</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="useWanderer" name="signatureMode" value="wanderer">
+                        <label for="useWanderer">Use Wanderer (Under Construction)</label>
                     </div>
                 </div>
             </div>

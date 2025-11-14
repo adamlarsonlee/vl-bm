@@ -149,7 +149,18 @@ function toggleSignatureMode() {
             nextDepthGroup.style.display = 'flex';
             temporaryNameNextContainer.style.display = 'block';
         }
+    } else if (mode === 'wanderer') {
+        // Wanderer mode - hide most inputs, will pull data from Wanderer API
+        signatureGroup.style.display = 'none';
+        signaturesGroup.style.display = 'none';
+        bookmarkSection.style.display = 'none';
+        listsContainer.classList.add('active');
+        wormholeTypeGroup.style.display = 'none';
+        includeCosmicCheckbox.style.display = 'none';
+        nextDepthGroup.style.display = 'none';
+        temporaryNameNextContainer.style.display = 'none';
     } else {
+        // All signatures mode
         signatureGroup.style.display = 'none';
         signaturesGroup.style.display = 'block';
         bookmarkSection.style.display = 'none';
@@ -168,6 +179,10 @@ document.getElementById('singleSignature').addEventListener('change', function()
     saveSettings();
 });
 document.getElementById('allSignatures').addEventListener('change', function() {
+    toggleSignatureMode();
+    saveSettings();
+});
+document.getElementById('useWanderer').addEventListener('change', function() {
     toggleSignatureMode();
     saveSettings();
 });
@@ -302,6 +317,7 @@ function generateString() {
     // Check signature mode
     const mode = document.querySelector('input[name="signatureMode"]:checked').value;
     const isAllSignaturesMode = mode === 'all';
+    const isWandererMode = mode === 'wanderer';
 
     // Show/hide fields based on Current Hole
     const nextHoleGroup = document.getElementById('nextHoleGroup');
@@ -318,7 +334,7 @@ function generateString() {
         nextHoleGroup.style.display = 'none';
         currentDepthGroup.style.display = 'block';
         // Only show next depth section if in single signature mode
-        if (isAllSignaturesMode) {
+        if (isAllSignaturesMode || isWandererMode) {
             nextDepthGroup.style.display = 'none';
             temporaryNameNextContainer.style.display = 'none';
         } else {
@@ -704,7 +720,13 @@ function loadSettings() {
 
         // Load signature mode
         if (settings.signatureMode) {
-            document.getElementById(settings.signatureMode === 'single' ? 'singleSignature' : 'allSignatures').checked = true;
+            const modeMap = {
+                'single': 'singleSignature',
+                'all': 'allSignatures',
+                'wanderer': 'useWanderer'
+            };
+            const radioId = modeMap[settings.signatureMode] || 'singleSignature';
+            document.getElementById(radioId).checked = true;
         }
 
         // Load include cosmic signatures
@@ -791,9 +813,6 @@ async function handleOAuthCallback() {
     const code = urlParams.get('code');
     const state = urlParams.get('state');
 
-    console.log(code);
-    console.log(state);
-
     if (!code) {
         return; // Not a callback
     }
@@ -858,25 +877,121 @@ async function handleOAuthCallback() {
     }
 }
 
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('eve_refresh_token');
+
+    if (!refreshToken) {
+        console.error('No refresh token available');
+        return false;
+    }
+
+    try {
+        const tokenResponse = await fetch(EVE_SSO_CONFIG.tokenEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                grant_type: 'refresh_token',
+                refresh_token: refreshToken,
+                client_id: EVE_SSO_CONFIG.clientId
+            })
+        });
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('Token refresh failed:', errorText);
+            return false;
+        }
+
+        const tokenData = await tokenResponse.json();
+
+        // Update stored tokens
+        localStorage.setItem('eve_access_token', tokenData.access_token);
+        localStorage.setItem('eve_refresh_token', tokenData.refresh_token);
+        localStorage.setItem('eve_token_expires', Date.now() + (tokenData.expires_in * 1000));
+
+        console.log('Access token refreshed successfully');
+        return true;
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        return false;
+    }
+}
+
 async function getCharacterLocation() {
     const accessToken = localStorage.getItem('eve_access_token');
     const characterId = localStorage.getItem('eve_character_id');
+    const tokenExpires = localStorage.getItem('eve_token_expires');
 
     if (!accessToken || !characterId) {
         return null;
     }
+
+    // Check if token is expired or will expire in the next 5 minutes
+    const now = Date.now();
+    const expiresIn = tokenExpires ? parseInt(tokenExpires) - now : 0;
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (expiresIn < fiveMinutes) {
+        console.log('Access token expired or expiring soon, refreshing...');
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) {
+            console.error('Failed to refresh token, clearing auth data');
+            logoutFromEve();
+            return null;
+        }
+    }
+
+    // Get the potentially refreshed token
+    const currentToken = localStorage.getItem('eve_access_token');
 
     try {
         const response = await fetch(
             `https://esi.evetech.net/latest/characters/${characterId}/location/`,
             {
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`
+                    'Authorization': `Bearer ${currentToken}`
                 }
             }
         );
 
         if (!response.ok) {
+            // If we get a 401, try refreshing the token once more
+            if (response.status === 401) {
+                console.log('Got 401, attempting token refresh...');
+                const refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    // Retry the request with the new token
+                    const retryToken = localStorage.getItem('eve_access_token');
+                    const retryResponse = await fetch(
+                        `https://esi.evetech.net/latest/characters/${characterId}/location/`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${retryToken}`
+                            }
+                        }
+                    );
+
+                    if (!retryResponse.ok) {
+                        throw new Error('Failed to fetch location after token refresh');
+                    }
+
+                    const retryLocationData = await retryResponse.json();
+                    const systemResponse = await fetch(
+                        `https://esi.evetech.net/latest/universe/systems/${retryLocationData.solar_system_id}/`
+                    );
+                    const systemData = await systemResponse.json();
+
+                    return {
+                        systemId: retryLocationData.solar_system_id,
+                        systemName: systemData.name
+                    };
+                } else {
+                    logoutFromEve();
+                    throw new Error('Failed to refresh token');
+                }
+            }
             throw new Error('Failed to fetch location');
         }
 
